@@ -1,0 +1,1166 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Heart, BookOpen, Trophy, Settings, Bell, ChevronRight, X, Check, Star, Clock, Users, Play, Download, Plus, BarChart3, Filter, Home, GraduationCap, MessageCircle, Award, Zap, Lock, Trash2, Edit3, ExternalLink, Image, Link, Save, ArrowLeft, LogOut, RefreshCw } from "lucide-react";
+
+// ─────────────────────────────────────────────
+// ДАННЫЕ С ФЛАГОМ ДЛЯ ПРОВЕРКИ ИСТОЧНИКА (isMock)
+// ─────────────────────────────────────────────
+
+const MOCK_OPPORTUNITIES = [
+  { id: 1, title: "Республиканская олимпиада по математике", category: "Олимпиада", format: "Офлайн", deadline: "2026-07-15", description: "Престижная олимпиада для учеников 9–11 классов. Три тура, призовой фонд.", requirements: "9–11 класс", tags: ["STEM", ["Наука"]], grades: [9, 10, 11], applyUrl: "https://olimp.edu.kz", isMock: true },
+  { id: 2, title: "Менторский хакатон Mentoria", category: "Хакатон", format: "Онлайн", deadline: "2026-06-30", description: "72-часовой хакатон по созданию EdTech-решений с менторской поддержкой.", requirements: "8–11 класс", tags: ["Программирование", "STEM"], grades: [8, 9, 10, 11], applyUrl: "https://hackathon.mentoria.kz", isMock: true },
+  { id: 3, title: "Стажировка в Tech-компании Astana", category: "Стажировка", format: "Гибрид", deadline: "2026-08-01", description: "Летняя стажировка для начинающих UI/UX дизайнеров и Frontend разработчиков.", requirements: "10–11 класс, базовый HTML/CSS", tags: ["IT", "Дизайн"], grades: [10, 11], applyUrl: "https://career.astana.tech", isMock: true }
+];
+
+const MOCK_COURSES = [
+  {
+    id: 1,
+    title: "Основы веб-разработки: HTML, CSS и основы JS",
+    description: "Разберитесь, как устроен современный веб. Вы изучите семантическую верстку, адаптивные сетки Flexbox/Grid, основы стилизации, анимации, а также базовые алгоритмы на JavaScript для создания интерактивности на веб-страницах.",
+    category: "Программирование",
+    duration: "12 часов",
+    lessonsCount: 3,
+    lessons: [
+      { 
+        id: 101, 
+        title: "Введение в HTML и основы тегов", 
+        type: "video", 
+        duration: "15 мин", 
+        content: "HTML (HyperText Markup Language) — это скелет любого сайта. Мы разберем структуру документа <!DOCTYPE html>, теги заголовков h1-h6, абзацы p, ссылки a и работу с изображениями img. Важно соблюдать семантику для SEO-оптимизации.",
+        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4" 
+      },
+      { 
+        id: 102, 
+        title: "Стилизация страниц с помощью CSS Flexbox", 
+        type: "article", 
+        duration: "25 мин", 
+        content: "CSS отвечает за внешний вид. Flexbox — это одномерная модель разметки, которая позволяет легко выравнивать элементы по горизонтали и вертикали. Главные свойства: display: flex, justify-content (выравнивание по главной оси) и align-items (по поперечной оси)." 
+      },
+      {
+        id: 103,
+        title: "Мини-тест по основам Веба",
+        type: "quiz",
+        duration: "10 мин",
+        quiz: {
+          question: "Какой HTML-тег используется для создания маркированного (ненумерованного) списка?",
+          options: ["<ol>", "<ul>", "<li>", "<list>"],
+          correct: 1,
+          explanation: "Тег <ul> (Unordered List) создает маркированный список. Тег <ol> создает нумерованный список (Ordered List), а <li> используется внутри них для обозначения каждого конкретного элемента списка."
+        }
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "Подготовка к олимпиадам по математике: Комбинаторика",
+    description: "Интенсивный курс по комбинаторному анализу. Мы изучим базовые правила сложения и умножения, перестановки, размещения, сочетания, а также продвинутые методы, такие как принцип Дирихле и метод 'шаров и перегородок'.",
+    category: "Наука",
+    duration: "18 часов",
+    lessonsCount: 2,
+    lessons: [
+      { 
+        id: 201, 
+        title: "Правило суммы и произведения. Факториал", 
+        type: "article", 
+        duration: "30 мин", 
+        content: "Если объект А можно выбрать n способами, а объект B — m способами, то выбор 'А или B' равен n + m способами (правило суммы), а выбор 'А и B' равен n * m способами (правило произведения). Число перестановок n элементов равно n! (факториал)." 
+      },
+      {
+        id: 202,
+        title: "Мини-тест: Сочетания и перестановки",
+        type: "quiz",
+        duration: "15 мин",
+        quiz: {
+          question: "Сколькими способами можно выбрать 2 дежурных из класса в 10 человек?",
+          options: ["20 способов", "90 способов", "45 способов", "10 способов"],
+          correct: 2,
+          explanation: "Используется формула сочетаний из 10 по 2 (порядок выбора не важен): C = 10! / (2! * (10-2)!) = (10 * 9) / 2 = 45. Если бы порядок имел значение (например, староста и зам), то было бы 90 способов."
+        }
+      }
+    ]
+  }
+];
+
+const MOCK_MENTOR_ADS = [
+  { id: 1, name: "Алихан Жумабеков", role: "Senior Web Developer", company: "EPAM", bio: "Помогу освоить React, Node.js и подготовиться к техническим собеседованиям.", rating: 4.9, reviews: 24, tags: ["Frontend", "JavaScript"], isMock: true },
+  { id: 2, name: "Динара Сатпаева", role: "Олимпиадный тренер", company: "РФМШ", bio: "Двукратный призер международной олимпиады. Готовлю школьников к республиканским турам по математике.", rating: 5.0, reviews: 42, tags: ["Математика", "Олимпиады"], isMock: true }
+];
+
+const INITIAL_LEADERBOARD = [
+  { rank: 1, name: "Арсен И.", points: 1450, badge: "🥇 Чемпион" },
+  { rank: 2, name: "Аружан К.", points: 1200, badge: "🥈 Эксперт" },
+  { rank: 3, name: "Вы", points: 0, badge: "🥉 Новичок" },
+  { rank: 4, name: "Данияр М.", points: 450, badge: "Студент" },
+  { rank: 5, name: "Мирас Т.", points: 300, badge: "Студент" }
+];
+
+// ─────────────────────────────────────────────
+// ГЛАВНЫЙ КОМПОНЕНТ ПРИЛОЖЕНИЯ
+// ─────────────────────────────────────────────
+
+export default function MentoriaHub() {
+  const [tab, setTab] = useState("home");
+  const [opportunities, setOpportunities] = useState(MOCK_OPPORTUNITIES);
+  const [courses, setCourses] = useState(MOCK_COURSES);
+  const [mentorAds, setMentorAds] = useState(MOCK_MENTOR_ADS);
+  const [leaderboard, setLeaderboard] = useState(INITIAL_LEADERBOARD);
+  
+  // Progress state: { [courseId]: [completedLessonId1, ...] }
+  const [progress, setProgress] = useState({});
+  const [favorites, setFavorites] = useState([]);
+  const [appliedOps, setAppliedOps] = useState([]); // Список ID поданных заявок
+  const [contactedMentors, setContactedMentors] = useState([]); // Список ID законнекченных менторов
+  const [toasts, setToasts] = useState([]);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [pendingCourseIdx, setPendingCourseIdx] = useState(null);
+
+  const [profile, setProfile] = useState({
+    name: "Нурлан Сериков",
+    grade: 10,
+    school: "НИШ ФМН, г. Алматы",
+    interests: ["Программирование", "STEM"],
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+  });
+
+  const addToast = useCallback((text, type = "success") => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
+
+  // Система начисления баллов (+50 за урок/тест, +100 за курс)
+  const handleProgressUpdate = useCallback((courseId, lessonId) => {
+    setProgress(prevProgress => {
+      const currentCourseLessons = prevProgress[courseId] || [];
+      if (currentCourseLessons.includes(lessonId)) return prevProgress; // Уже пройден
+
+      const updatedLessons = [...currentCourseLessons, lessonId];
+      let pointsToAdd = 50; // Базовые +50 за прохождение урока/теста
+      
+      // Проверяем, завершен ли весь курс
+      const targetCourse = courses.find(c => c.id === courseId);
+      const isCourseNowFinished = targetCourse && updatedLessons.length === targetCourse.lessons.length;
+      
+      if (isCourseNowFinished) {
+        pointsToAdd += 100; // Бонус +100 за закрытие курса
+        addToast(`🎉 Курс "${targetCourse.title}" полностью завершен! Бонус +100 баллов!`, "success");
+      } else {
+        addToast("✨ Урок пройден! Получено +50 баллов", "success");
+      }
+
+      // Обновляем очки во вкладке лидеров
+      setLeaderboard(prevLeaderboard => {
+        const updated = prevLeaderboard.map(user => {
+          if (user.name === "Вы") {
+            const newPoints = user.points + pointsToAdd;
+            let badge = "🥉 Новичок";
+            if (newPoints >= 500) badge = "🥈 Эксперт";
+            if (newPoints >= 1000) badge = "🥇 Чемпион";
+            return { ...user, points: newPoints, badge };
+          }
+          return user;
+        });
+        return [...updated].sort((a, b) => b.points - a.points);
+      });
+
+      return {
+        ...prevProgress,
+        [courseId]: updatedLessons
+      };
+    });
+  }, [courses, addToast]);
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]);
+    addToast(favorites.includes(id) ? "Удалено из избранного" : "Добавлено в избранное");
+  };
+
+  const handleApply = (op) => {
+    if (op.isMock) {
+      if (!appliedOps.includes(op.id)) {
+        setAppliedOps(prev => [...prev, op.id]);
+      }
+      addToast("📄 Заявка принята! Организаторы свяжутся с вами.", "success");
+    } else {
+      if (op.applyUrl) {
+        window.open(op.applyUrl, "_blank");
+      } else {
+        addToast("Ссылка на подачу отсутствует.", "error");
+      }
+    }
+  };
+
+  const handleConnectMentor = (mentor) => {
+    if (mentor.isMock) {
+      if (!contactedMentors.includes(mentor.id)) {
+        setContactedMentors(prev => [...prev, mentor.id]);
+      }
+      addToast("📧 С вами свяжется ментор в ближайшее время!", "info");
+    } else {
+      if (mentor.contact) {
+        window.open(mentor.contact, "_blank");
+      } else {
+        addToast(`Заявка отправлена ментору ${mentor.name}!`, "success");
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    setProfile(null);
+    addToast("Вы вышли из аккаунта", "info");
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0F172A] text-gray-100 font-sans selection:bg-indigo-500 selection:text-white">
+      {/* НАВИГАЦИЯ */}
+      <header className="sticky top-0 z-40 bg-[#1E293B]/80 backdrop-blur-md border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setTab("home")}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-black bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">MENTORIA</span>
+              <span className="text-xs block text-indigo-400 font-semibold tracking-wider">HUB V2</span>
+            </div>
+          </div>
+
+          <nav className="hidden md:flex space-x-1">
+            {[
+              { id: "home", label: "Главная", icon: Home },
+              { id: "catalog", label: "Каталог", icon: Filter },
+              { id: "courses", label: "Обучение", icon: BookOpen },
+              { id: "mentors", label: "Менторы", icon: Users },
+              { id: "rating", label: "Рейтинг", icon: Trophy },
+              { id: "cabinet", label: "Кабинет", icon: Settings },
+            ].map(t => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center space-x-3">
+            <button onClick={() => setShowAdmin(true)} className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white transition-all border border-gray-700/50">
+              <Zap className="w-4 h-4 text-amber-400" />
+            </button>
+            {profile && (
+              <div className="flex items-center space-x-3 pl-2 border-l border-gray-800 cursor-pointer" onClick={() => setTab("cabinet")}>
+                <img src={profile.avatar} alt="avatar" className="w-9 h-9 rounded-xl object-cover ring-2 ring-indigo-500/20" />
+                <div className="hidden lg:block text-left">
+                  <div className="text-xs text-gray-400">Профиль</div>
+                  <div className="text-sm font-semibold text-gray-200">{profile.name.split(" ")[0]}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ОСНОВНОЙ КОНТЕНТ */}
+      <main className="pb-16">
+        {tab === "home" && <Landing setTab={setTab} leaderboard={leaderboard} courses={courses} progress={progress} />}
+        {tab === "catalog" && <Catalog opportunities={opportunities} favorites={favorites} appliedOps={appliedOps} onFavorite={toggleFavorite} onApply={handleApply} />}
+        {tab === "courses" && <CoursesWrapper courses={courses} progress={progress} onProgressUpdate={handleProgressUpdate} addToast={addToast} pendingCourseIdx={pendingCourseIdx} clearPending={() => setPendingCourseIdx(null)} />}
+        {tab === "mentors" && <Mentors addToast={addToast} mentorAds={mentorAds} setMentorAds={setMentorAds} contactedMentors={contactedMentors} onConnect={handleConnectMentor} />}
+        {tab === "rating" && <Rating leaderboard={leaderboard} />}
+        {tab === "cabinet" && profile && <Cabinet profile={profile} courses={courses} progress={progress} opportunities={opportunities} favorites={favorites} leaderboard={leaderboard} setTab={setTab} onSelectCourse={(idx) => { setPendingCourseIdx(idx); setTab("courses"); }} onLogout={handleLogout} />}
+        {tab === "cabinet" && !profile && <div className="text-center py-20 text-gray-400">Войдите в аккаунт для доступа к кабинету</div>}
+      </main>
+
+      {showAdmin && <Admin onClose={() => setShowAdmin(false)} opportunities={opportunities} setOpportunities={setOpportunities} courses={courses} setCourses={setCourses} mentorAds={mentorAds} setMentorAds={setMentorAds} addToast={addToast} />}
+      <Toast toasts={toasts} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ПОДКОМПОНЕНТЫ
+// ─────────────────────────────────────────────
+
+function Toast({ toasts }) {
+  return (
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2">
+      {toasts.map(t => (
+        <div key={t.id} className={`px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium transition-all transform animate-bounce-short flex items-center space-x-2 ${
+          t.type === "success" ? "bg-emerald-950/90 border-emerald-500/30 text-emerald-200" :
+          t.type === "error" ? "bg-rose-950/90 border-rose-500/30 text-rose-200" : "bg-indigo-950/90 border-indigo-500/30 text-indigo-200"
+        }`}>
+          <span>{t.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Landing({ setTab, leaderboard, courses, progress }) {
+  const myScore = leaderboard.find(u => u.name === "Вы")?.points || 0;
+  return (
+    <div className="max-w-7xl mx-auto px-4 pt-8 space-y-12">
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 border border-gray-800 p-8 md:p-12 shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative max-w-2xl space-y-6">
+          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+            <Zap className="w-3.5 h-3.5 animate-pulse" />
+            <span>Ваша личная EdTech экосистема</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none text-white">
+            Развивай навыки. <br /> Участвуй в <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Олимпиадах</span>
+          </h1>
+          <p className="text-gray-400 text-base md:text-lg leading-relaxed">
+            Подавайте заявки на республиканские и международные конкурсы, проходите структурированные курсы, зарабатывайте баллы и общайтесь с топовыми менторами.
+          </p>
+          <div className="flex flex-wrap gap-4 pt-2">
+            <button onClick={() => setTab("catalog")} className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center space-x-2">
+              <span>Искать возможности</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button onClick={() => setTab("courses")} className="px-6 py-3.5 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl border border-gray-700 transition-all">
+              Начать обучение
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Быстрая статистика */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#1E293B]/60 border border-gray-800 p-6 rounded-2xl flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+            <Trophy className="w-6 h-6 text-amber-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-white">{myScore}</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Ваш счет баллов (+50/урок, +100/курс)</div>
+          </div>
+        </div>
+        <div className="bg-[#1E293B]/60 border border-gray-800 p-6 rounded-2xl flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+            <BookOpen className="w-6 h-6 text-indigo-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-white">{courses.length}</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Доступно курсов</div>
+          </div>
+        </div>
+        <div className="bg-[#1E293B]/60 border border-gray-800 p-6 rounded-2xl flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+            <Award className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-white">
+              {Object.values(progress).reduce((acc, curr) => acc + curr.length, 0)}
+            </div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Пройдено шагов/тестов</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Catalog({ opportunities, favorites, appliedOps, onFavorite, onApply }) {
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("Все");
+  const categories = ["Все", "Олимпиада", "Хакатон", "Стажировка"];
+
+  const filtered = opportunities.filter(o => {
+    const matchesSearch = o.title.toLowerCase().includes(search.toLowerCase()) || o.description.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = cat === "Все" || o.category === cat;
+    return matchesSearch && matchesCat;
+  });
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 pt-8 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Каталог возможностей</h2>
+          <p className="text-sm text-gray-400">Олимпиады, гранты и стажировки для школьников</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Поиск по названию..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2.5 bg-[#1E293B] border border-gray-800 rounded-xl text-sm text-gray-200 focus:outline-none focus:border-indigo-500 w-full sm:w-64"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex space-x-2 overflow-x-auto pb-1">
+        {categories.map(c => (
+          <button
+            key={c}
+            onClick={() => setCat(c)}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              cat === c ? "bg-indigo-600 border-indigo-500 text-white" : "bg-[#1E293B] border-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filtered.map(op => {
+          const isFav = favorites.includes(op.id);
+          const hasApplied = appliedOps.includes(op.id);
+          return (
+            <div key={op.id} className="bg-[#1E293B]/50 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between hover:border-gray-700/70 transition-all relative">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+                    {op.category}
+                  </span>
+                  <button onClick={() => onFavorite(op.id)} className="text-gray-500 hover:text-rose-400 transition-colors">
+                    <Heart className={`w-5 h-5 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
+                  </button>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-100 leading-snug">{op.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1" />
+                    Дедлайн: {op.deadline}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-400 line-clamp-3">{op.description}</p>
+                <div className="pt-2">
+                  <div className="text-xs text-gray-500 font-medium">Требования:</div>
+                  <div className="text-xs text-gray-300 mt-0.5">{op.requirements}</div>
+                </div>
+              </div>
+
+              <div className="pt-6 mt-4 border-t border-gray-800/60 flex items-center justify-between">
+                {op.isMock ? (
+                  <button
+                    onClick={() => onApply(op)}
+                    className={`w-full py-2.5 px-4 text-xs font-bold rounded-xl transition-all ${
+                      hasApplied 
+                        ? "bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 cursor-default" 
+                        : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                    }`}
+                  >
+                    {hasApplied ? "✓ Заявка принята" : "Подать заявку"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onApply(op)}
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all"
+                  >
+                    <span>Перейти на сайт</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center py-12 text-gray-500 text-sm">Ничего не найдено по выбранным фильтрам</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CoursesWrapper({ courses, progress, onProgressUpdate, addToast, pendingCourseIdx, clearPending }) {
+  const [activeCourse, setActiveCourse] = useState(null);
+
+  useEffect(() => {
+    if (pendingCourseIdx !== null) {
+      const found = courses.find(c => c.id === pendingCourseIdx);
+      if (found) setActiveCourse(found);
+      clearPending();
+    }
+  }, [pendingCourseIdx, courses, clearPending]);
+
+  if (activeCourse) {
+    return <CourseLessons course={activeCourse} progress={progress} onProgressUpdate={onProgressUpdate} onBack={() => setActiveCourse(null)} />;
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 pt-8 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">Интерактивные курсы</h2>
+        <p className="text-sm text-gray-400">Изучайте материалы и проходите мини-тесты (+50 за урок, +100 за закрытие курса)</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {courses.map(course => {
+          const completedCount = progress[course.id]?.length || 0;
+          const totalCount = course.lessons.length;
+          const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+          
+          return (
+            <div key={course.id} className="bg-[#1E293B]/50 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between hover:border-gray-700/60 transition-all">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 text-xs font-semibold rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    {course.category}
+                  </span>
+                  <span className="text-xs text-gray-500 flex items-center">
+                    <Clock className="w-3.5 h-3.5 mr-1" />
+                    {course.duration}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white">{course.title}</h3>
+                <p className="text-sm text-gray-400 line-clamp-3">{course.description}</p>
+
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-gray-400">Прогресс обучения</span>
+                    <span className="text-indigo-400">{pct}% ({completedCount}/{totalCount} заблокировано)</span>
+                  </div>
+                  <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-indigo-500 h-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-800/60">
+                <button
+                  onClick={() => setActiveCourse(course)}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl transition-all"
+                >
+                  {completedCount > 0 ? "Продолжить обучение" : "Начать изучение"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CourseLessons({ course, progress, onProgressUpdate, onBack }) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const currentLesson = course.lessons[currentIdx];
+  const completedLessons = progress[course.id] || [];
+  const isCurrentCompleted = completedLessons.includes(currentLesson?.id);
+
+  // Состояние для тестов
+  const [selectedAns, setSelectedAns] = useState(null);
+  const [quizChecked, setQuizChecked] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+
+  useEffect(() => {
+    setSelectedAns(null);
+    setQuizChecked(false);
+    setIsCorrect(false);
+  }, [currentIdx]);
+
+  if (!currentLesson) return null;
+
+  const handleQuizCheck = () => {
+    if (selectedAns === null) return;
+    const correctIdx = currentLesson.quiz.correct;
+    const right = selectedAns === correctIdx;
+    setIsCorrect(right);
+    setQuizChecked(true);
+
+    if (right) {
+      onProgressUpdate(course.id, currentLesson.id);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 pt-6 space-y-6">
+      <button onClick={onBack} className="inline-flex items-center space-x-2 text-sm text-gray-400 hover:text-white transition-colors">
+        <ArrowLeft className="w-4 h-4" />
+        <span>Назад к списку курсов</span>
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Боковая панель уроков */}
+        <div className="bg-[#1E293B]/70 border border-gray-800 rounded-2xl p-4 space-y-2">
+          <div className="text-xs font-bold uppercase text-gray-500 px-2 tracking-wider">Содержание курса</div>
+          <div className="space-y-1">
+            {course.lessons.map((les, idx) => {
+              const done = completedLessons.includes(les.id);
+              const active = idx === currentIdx;
+              return (
+                <button
+                  key={les.id}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between text-xs transition-all ${
+                    active ? "bg-indigo-600 text-white" : "bg-transparent text-gray-400 hover:bg-gray-800/50 hover:text-white"
+                  }`}
+                >
+                  <span className="truncate pr-2">{idx + 1}. {les.title}</span>
+                  {done ? <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <Clock className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Текущее контентное окно */}
+        <div className="lg:col-span-2 bg-[#1E293B]/40 border border-gray-800 rounded-2xl p-6 space-y-6">
+          <div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              {currentLesson.type === "quiz" ? "Мини-Тест" : currentLesson.type}
+            </span>
+            <h3 className="text-xl font-bold text-white mt-1">{currentLesson.title}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Время на изучение: ~{currentLesson.duration}</p>
+          </div>
+
+          {/* Видео контент */}
+          {currentLesson.type === "video" && (
+            <div className="space-y-4">
+              <div className="aspect-video bg-black rounded-xl overflow-hidden relative border border-gray-800">
+                <video src={currentLesson.videoUrl} controls className="w-full h-full object-cover" />
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed bg-[#0F172A]/60 p-4 rounded-xl border border-gray-800/80">
+                {currentLesson.content}
+              </p>
+            </div>
+          )}
+
+          {/* Текстовая статья */}
+          {currentLesson.type === "article" && (
+            <div className="bg-[#0F172A]/50 border border-gray-800/60 p-5 rounded-xl text-sm text-gray-300 leading-relaxed space-y-4">
+              <p>{currentLesson.content}</p>
+            </div>
+          )}
+
+          {/* Тестирование + объяснение ошибок */}
+          {currentLesson.type === "quiz" && (
+            <div className="space-y-4 bg-[#0F172A]/40 p-5 rounded-xl border border-gray-800">
+              <h4 className="text-sm font-semibold text-gray-200">{currentLesson.quiz.question}</h4>
+              <div className="space-y-2 pt-2">
+                {currentLesson.quiz.options.map((opt, oIdx) => {
+                  let optStyle = "bg-[#1E293B] border-gray-800 text-gray-300 hover:bg-gray-800";
+                  if (selectedAns === oIdx) optStyle = "bg-indigo-600/20 border-indigo-500 text-indigo-300";
+                  
+                  if (quizChecked) {
+                    if (oIdx === currentLesson.quiz.correct) {
+                      optStyle = "bg-emerald-950/80 border-emerald-500 text-emerald-300 font-medium";
+                    } else if (selectedAns === oIdx) {
+                      optStyle = "bg-rose-950/80 border-rose-500 text-rose-300";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={oIdx}
+                      disabled={quizChecked && isCorrect}
+                      onClick={() => !quizChecked && setSelectedAns(oIdx)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border text-xs transition-all flex items-center justify-between ${optStyle}`}
+                    >
+                      <span>{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Вывод объяснения в случае ошибки */}
+              {quizChecked && !isCorrect && (
+                <div className="mt-4 p-4 rounded-xl bg-amber-950/40 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed">
+                  <span className="font-bold block text-amber-400 mb-1">❌ Неверно. Объяснение:</span>
+                  {currentLesson.quiz.explanation}
+                </div>
+              )}
+              {quizChecked && isCorrect && (
+                <div className="mt-4 p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-xs text-emerald-400 leading-relaxed">
+                  <span className="font-bold block text-emerald-400 mb-1">✓ Отлично! Ответ верный.</span>
+                  {currentLesson.quiz.explanation}
+                </div>
+              )}
+
+              {!quizChecked && (
+                <button
+                  onClick={handleQuizCheck}
+                  disabled={selectedAns === null}
+                  className="w-full mt-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-xs font-bold rounded-xl transition-all"
+                >
+                  Проверить ответ
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Кнопка отметки прочтения (только для статей и видео) */}
+          {currentLesson.type !== "quiz" && (
+            <div className="pt-4 border-t border-gray-800/50 flex justify-end">
+              <button
+                onClick={() => onProgressUpdate(course.id, currentLesson.id)}
+                disabled={isCurrentCompleted}
+                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isCurrentCompleted ? "bg-emerald-950/50 text-emerald-400 border border-emerald-500/20 cursor-default" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/10"
+                }`}
+              >
+                {isCurrentCompleted ? "✓ Пройдено (+50)" : "Изучил материал (+50)"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Mentors({ mentorAds, contactedMentors, onConnect }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 pt-8 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-white">Взаимодействие с менторами</h2>
+        <p className="text-sm text-gray-400">Получите квалифицированную помощь от экспертов индустрии</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {mentorAds.map(mentor => {
+          const isContacted = contactedMentors.includes(mentor.id);
+          return (
+            <div key={mentor.id} className="bg-[#1E293B]/50 border border-gray-800 rounded-2xl p-6 flex flex-col justify-between hover:border-gray-700/60 transition-all">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-600/20 flex items-center justify-center border border-indigo-500/30 text-indigo-400 font-bold text-lg">
+                      {mentor.name[0]}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-100 text-base">{mentor.name}</h3>
+                      <p className="text-xs text-gray-400">{mentor.role} @ <span className="text-indigo-400 font-medium">{mentor.company}</span></p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded text-amber-400 text-xs font-bold">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span>{mentor.rating}</span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-400 leading-relaxed">{mentor.bio}</p>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {mentor.tags?.map(t => (
+                    <span key={t} className="px-2 py-0.5 bg-[#0F172A] border border-gray-800 text-gray-400 rounded text-[10px]">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-800/50">
+                {mentor.isMock ? (
+                  <button
+                    onClick={() => onConnect(mentor)}
+                    className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all ${
+                      isContacted 
+                        ? "bg-indigo-950/60 border border-indigo-500/30 text-indigo-400 cursor-default" 
+                        : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                    }`}
+                  >
+                    {isContacted ? "✓ С вами свяжется ментор" : "Связаться с ментором"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onConnect(mentor)}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1 transition-all"
+                  >
+                    <span>Связаться напрямую</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Rating({ leaderboard }) {
+  return (
+    <div className="max-w-3xl mx-auto px-4 pt-8 space-y-6">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-black tracking-tight text-white">Республиканский рейтинг учеников</h2>
+        <p className="text-sm text-gray-400">Набирайте баллы за уроки (+50) и курсы (+100) чтобы занять топ</p>
+      </div>
+
+      <div className="bg-[#1E293B]/50 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="divide-y divide-gray-800/80">
+          {leaderboard.map((u, index) => {
+            const isMe = u.name === "Вы";
+            return (
+              <div key={index} className={`flex items-center justify-between p-4 px-6 transition-colors ${isMe ? "bg-indigo-600/10" : "hover:bg-gray-800/30"}`}>
+                <div className="flex items-center space-x-4">
+                  <span className={`w-6 text-sm font-bold text-center ${index === 0 ? "text-amber-400" : index === 1 ? "text-gray-400" : index === 2 ? "text-amber-700" : "text-gray-500"}`}>
+                    {index + 1}
+                  </span>
+                  <div>
+                    <div className="text-sm font-bold flex items-center space-x-2">
+                      <span className={isMe ? "text-indigo-400 font-extrabold" : "text-gray-200"}>{u.name}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-gray-800 text-gray-400 font-normal border border-gray-700/40">{u.badge}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-black text-white">{u.points}</span>
+                  <span className="text-[10px] text-gray-500 block">PTS</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Cabinet({ profile, courses, progress, opportunities, favorites, leaderboard, setTab, onSelectCourse, onLogout }) {
+  const myPoints = leaderboard.find(u => u.name === "Вы")?.points || 0;
+  const favItems = opportunities.filter(o => favorites.includes(o.id));
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 pt-8 space-y-8">
+      {/* Шапка профиля */}
+      <div className="bg-[#1E293B]/40 border border-gray-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center space-x-4 flex-col sm:flex-row text-center sm:text-left">
+          <img src={profile.avatar} alt="avatar" className="w-16 h-16 rounded-2xl object-cover ring-4 ring-indigo-500/20 mb-3 sm:mb-0" />
+          <div>
+            <h3 className="text-xl font-bold text-white">{profile.name}</h3>
+            <p className="text-xs text-gray-400 mt-0.5">{profile.school} • {profile.grade} класс</p>
+            <div className="flex flex-wrap gap-1 mt-2 justify-center sm:justify-start">
+              {profile.interests.map(t => (
+                <span key={t} className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded text-[10px] font-semibold">{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4 bg-[#0F172A]/70 border border-gray-800/80 p-4 rounded-xl min-w-[160px] justify-between">
+          <div>
+            <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Ваш счет</div>
+            <div className="text-xl font-black text-white">{myPoints} <span className="text-xs text-indigo-400">pts</span></div>
+          </div>
+          <button onClick={onLogout} className="p-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg transition-all" title="Выйти">
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Текущие курсы */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-bold uppercase text-gray-400 tracking-wider flex items-center">
+            <BookOpen className="w-4 h-4 mr-2 text-indigo-400" /> Активные курсы
+          </h4>
+          <div className="space-y-3">
+            {courses.map(c => {
+              const done = progress[c.id]?.length || 0;
+              const total = c.lessons.length;
+              if (done === 0) return null;
+              return (
+                <div key={c.id} onClick={() => onSelectCourse(c.id)} className="p-4 bg-[#1E293B]/40 border border-gray-800 hover:border-gray-700 rounded-xl cursor-pointer transition-all space-y-2">
+                  <div className="text-xs text-gray-400 font-semibold line-clamp-1">{c.title}</div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-gray-500">Пройдено шагов: {done}/{total}</span>
+                    <span className="text-indigo-400 font-bold">{Math.round((done/total)*100)}%</span>
+                  </div>
+                </div>
+              );
+            })}
+            {Object.keys(progress).length === 0 && (
+              <div className="text-xs text-gray-500 bg-[#1E293B]/20 border border-gray-800/60 p-6 rounded-xl text-center">Вы еще не начали ни одного курса. Перейдите во вкладку "Обучение"</div>
+            )}
+          </div>
+        </div>
+
+        {/* Избранные возможности */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-bold uppercase text-gray-400 tracking-wider flex items-center">
+            <Heart className="w-4 h-4 mr-2 text-rose-400" /> Избранные вакансии / олимпиады
+          </h4>
+          <div className="space-y-3">
+            {favItems.map(f => (
+              <div key={f.id} onClick={() => setTab("catalog")} className="p-4 bg-[#1E293B]/40 border border-gray-800 hover:border-gray-700 rounded-xl cursor-pointer transition-all flex justify-between items-center">
+                <div>
+                  <div className="text-xs font-bold text-gray-200 line-clamp-1">{f.title}</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Категория: {f.category} | Дедлайн: {f.deadline}</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
+              </div>
+            ))}
+            {favItems.length === 0 && (
+              <div className="text-xs text-gray-500 bg-[#1E293B]/20 border border-gray-800/60 p-6 rounded-xl text-center">В избранном пусто. Добавляйте карточки во вкладке "Каталог"</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// АДМИН ПАНЕЛЬ (ИСПРАВЛЕН БАГ ИСЧЕЗНОВЕНИЯ КНОПОК)
+// ─────────────────────────────────────────────
+function Admin({ onClose, opportunities, setOpportunities, courses, setCourses, mentorAds, setMentorAds, addToast }) {
+  const [adminTab, setAdminTab] = useState("op");
+
+  // Безопасные стейты для форм ввода с дефолтными пустыми строками
+  const [opForm, setOpForm] = useState({ title: "", category: "Олимпиада", deadline: "", description: "", requirements: "", applyUrl: "" });
+  const [mentorForm, setMentorForm] = useState({ name: "", role: "", company: "", bio: "", tags: "", contact: "" });
+
+  const handleCreateOp = (e) => {
+    e.preventDefault();
+    if (!opForm.title || !opForm.description) {
+      addToast("Заполните обязательные поля!", "error");
+      return;
+    }
+    const newOp = {
+      id: Date.now() + Math.random(),
+      title: opForm.title,
+      category: opForm.category,
+      format: "Онлайн",
+      deadline: opForm.deadline || "Не указан",
+      description: opForm.description,
+      requirements: opForm.requirements || "Для всех",
+      tags: [opForm.category],
+      grades: [9, 10, 11],
+      applyUrl: opForm.applyUrl || "https://google.com",
+      isMock: false // Помечаем, что создано администратором
+    };
+
+    // ФУНКЦИОНАЛЬНОЕ ОБНОВЛЕНИЕ БЕЗ МУТАЦИИ СОСТОЯНИЯ (Решает баг исчезновения кнопок)
+    setOpportunities(prev => [...prev, newOp]);
+    addToast("Возможность успешно добавлена!");
+    
+    // Сброс формы в начальное состояние
+    setOpForm({ title: "", category: "Олимпиада", deadline: "", description: "", requirements: "", applyUrl: "" });
+  };
+
+  const handleCreateMentor = (e) => {
+    e.preventDefault();
+    if (!mentorForm.name || !mentorForm.role || !mentorForm.bio) {
+      addToast("Заполните обязательные поля!", "error");
+      return;
+    }
+    const newMentor = {
+      id: Date.now() + Math.random(),
+      name: mentorForm.name,
+      role: mentorForm.role,
+      company: mentorForm.company || "Фриланс",
+      bio: mentorForm.bio,
+      rating: 5.0,
+      reviews: 0,
+      tags: mentorForm.tags ? mentorForm.tags.split(",").map(t => t.trim()) : ["Общее"],
+      contact: mentorForm.contact || "#",
+      isMock: false // Ментор создан админом/пользователем
+    };
+
+    // ФУНКЦИОНАЛЬНОЕ ОБНОВЛЕНИЕ БЕЗ МУТАЦИИ СОСТОЯНИЯ
+    setMentorAds(prev => [...prev, newMentor]);
+    addToast("Объявление ментора создано!");
+
+    // Сброс формы в начальное состояние
+    setMentorForm({ name: "", role: "", company: "", bio: "", tags: "", contact: "" });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1E293B] border border-gray-800 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        {/* Шапка модалки */}
+        <div className="p-4 px-6 border-b border-gray-800 flex items-center justify-between bg-[#0F172A]/40">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center">
+              <Zap className="w-4 h-4 text-amber-400 mr-2" /> Панель управления (Admin)
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Навигация админки */}
+        <div className="flex border-b border-gray-800/60 bg-[#0F172A]/20 p-2 space-x-1">
+          <button
+            onClick={() => setAdminTab("op")}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${adminTab === "op" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}
+          >
+            + Возможность
+          </button>
+          <button
+            onClick={() => setAdminTab("mentor")}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${adminTab === "mentor" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}
+          >
+            + Ментор
+          </button>
+        </div>
+
+        {/* Тело с формами (Скроллящееся) */}
+        <div className="p-6 overflow-y-auto space-y-4 flex-1">
+          {adminTab === "op" && (
+            <form onSubmit={handleCreateOp} className="space-y-3 text-left">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Название возможности *</label>
+                <input
+                  type="text"
+                  required
+                  value={opForm.title}
+                  onChange={e => setOpForm({ ...opForm, title: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="Пример: Международный конкурс проектов"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Категория</label>
+                  <select
+                    value={opForm.category}
+                    onChange={e => setOpForm({ ...opForm, category: e.target.value })}
+                    className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  >
+                    <option value="Олимпиада">Олимпиада</option>
+                    <option value="Хакатон">Хакатон</option>
+                    <option value="Стажировка">Стажировка</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Дедлайн</label>
+                  <input
+                    type="date"
+                    value={opForm.deadline}
+                    onChange={e => setOpForm({ ...opForm, deadline: e.target.value })}
+                    className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Ссылка для перехода *</label>
+                <input
+                  type="url"
+                  value={opForm.applyUrl}
+                  onChange={e => setOpForm({ ...opForm, applyUrl: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="https://example.com/apply"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Требования к участникам</label>
+                <input
+                  type="text"
+                  value={opForm.requirements}
+                  onChange={e => setOpForm({ ...opForm, requirements: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="Пример: Ученики 10–11 классов"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Описание *</label>
+                <textarea
+                  rows="3"
+                  required
+                  value={opForm.description}
+                  onChange={e => setOpForm({ ...opForm, description: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  placeholder="Детальное описание..."
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full mt-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+              >
+                Опубликовать в каталог
+              </button>
+            </form>
+          )}
+
+          {adminTab === "mentor" && (
+            <form onSubmit={handleCreateMentor} className="space-y-3 text-left">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">ФИО Ментора *</label>
+                <input
+                  type="text"
+                  required
+                  value={mentorForm.name}
+                  onChange={e => setMentorForm({ ...mentorForm, name: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="Пример: Арман Ибраев"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Должность / Специализация *</label>
+                  <input
+                    type="text"
+                    required
+                    value={mentorForm.role}
+                    onChange={e => setMentorForm({ ...mentorForm, role: e.target.value })}
+                    className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    placeholder="Пример: Data Scientist"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Компания / Место работы</label>
+                  <input
+                    type="text"
+                    value={mentorForm.company}
+                    onChange={e => setMentorForm({ ...mentorForm, company: e.target.value })}
+                    className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    placeholder="Пример: Google"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Контакты (Ссылка на Telegram/Линк) *</label>
+                <input
+                  type="url"
+                  required
+                  value={mentorForm.contact}
+                  onChange={e => setMentorForm({ ...mentorForm, contact: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  placeholder="https://t.me/username"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Теги (Через запятую)</label>
+                <input
+                  type="text"
+                  value={mentorForm.tags}
+                  onChange={e => setMentorForm({ ...mentorForm, tags: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  placeholder="Python, AI, Олимпиады"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Биография / Описание опыта *</label>
+                <textarea
+                  rows="3"
+                  required
+                  value={mentorForm.bio}
+                  onChange={e => setMentorForm({ ...mentorForm, bio: e.target.value })}
+                  className="w-full bg-[#0F172A] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  placeholder="Расскажите о своем опыте..."
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full mt-2 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+              >
+                Зарегистрировать ментора
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
