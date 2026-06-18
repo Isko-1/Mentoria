@@ -1327,7 +1327,18 @@ function buildSpectrumGrids() {
   });
 }
 
+const CONTENT_VERSION = "2026-06-18-v2"; // увеличивайте при обновлении BASE_OPS/BASE_COURSES/BASE_MENTORS
+
 function initDatabase() {
+  const savedVersion = localStorage.getItem("m_content_version");
+  if (savedVersion !== CONTENT_VERSION) {
+    // Контент обновился — сбрасываем кэш на новые базовые данные, чтобы все устройства видели актуальный ассортимент
+    localStorage.removeItem("m_db_ops");
+    localStorage.removeItem("m_db_courses");
+    localStorage.removeItem("m_db_leaderboard");
+    localStorage.removeItem("m_db_mentors");
+    localStorage.setItem("m_content_version", CONTENT_VERSION);
+  }
   state.opportunities = JSON.parse(localStorage.getItem("m_db_ops")) || BASE_OPS;
   state.courses = JSON.parse(localStorage.getItem("m_db_courses")) || BASE_COURSES;
   state.leaderboard = JSON.parse(localStorage.getItem("m_db_leaderboard")) || BASE_LEADERBOARD;
